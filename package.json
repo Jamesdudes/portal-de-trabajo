@@ -1,0 +1,20 @@
+{
+  "name": "portal-de-trabajo",
+  "private": true,
+  "version": "2.1.0",
+  "type": "module",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "server": "node backend/server.js",
+    "test": "node backend/tests/verifyAll.js",
+    "lint": "node --check backend/server.js backend/routes/router.js backend/config/db.js backend/controllers/authController.js backend/controllers/jobsController.js backend/controllers/companiesController.js backend/controllers/appsController.js backend/controllers/filesController.js backend/controllers/adminController.js backend/controllers/reviewsController.js backend/controllers/forumsController.js backend/tests/verifyAll.js",
+    "build": "node --check backend/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.2.3",
+    "mongodb": "^7.8.0"
+  }
+}
+

@@ -1,0 +1,6 @@
+{
+  "name": "Portal de Trabajo - UNICAES",
+  "description": "Prototipo web universitario interactivo del Portal de Trabajo con 15 pantallas completas, módulos para Candidato, Empleador, Administración y Recursos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

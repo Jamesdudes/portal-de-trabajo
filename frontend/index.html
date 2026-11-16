@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal de Trabajo | Plataforma Profesional de Empleo</title>
+  <meta name="description" content="Plataforma profesional de empleo, vinculación de talento y oportunidades laborales para candidatos y empresas.">
+  <script>
+    (function () {
+      try {
+        var hasSession = !!localStorage.getItem('pt_token');
+        var saved = localStorage.getItem('pt_theme');
+        var theme = (hasSession && saved === 'dark') ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme;
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e40af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='14' x='2' y='7' rx='2' ry='2'/><path d='M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16'/></svg>">
+</head>
+<body>
+
+  <!-- Header & Navbar -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <div class="nav-brand-row">
+        <a href="#P-01" class="brand" onclick="event.preventDefault(); window.navigateTo('P-01');">
+          <span class="brand-icon" style="color: var(--color-primary-text); display: inline-flex; align-items: center;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y='7' rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </span>
+          <span>Portal de Trabajo</span>
+        </a>
+
+        <button
+          type="button"
+          id="mobile-menu-btn"
+          class="mobile-menu-btn"
+          onclick="window.toggleMobileNav()"
+          aria-label="Abrir menú de navegación"
+          aria-expanded="false"
+          aria-controls="nav-collapse"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="nav-collapse" id="nav-collapse">
+        <!-- Navigation Links (Dynamic per role) -->
+        <nav aria-label="Navegación principal" class="nav-links-wrap">
+          <ul class="nav-links" id="nav-links">
+            <!-- Rendered dynamically by app.js with SVG icons -->
+          </ul>
+        </nav>
+
+        <!-- Right Controls: Auth State -->
+        <div class="nav-right">
+          <div class="nav-auth" id="nav-auth">
+            <!-- Rendered dynamically by app.js -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dynamic Application Content -->
+  <main id="app-content">
+    <!-- Screen components injected here by app.js -->
+  </main>
+
+  <!-- Global Modal Container -->
+  <div id="modal-container"></div>
+
+  <!-- Global Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <span style="color: var(--color-primary-text); display: inline-flex;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            </span>
+            <strong style="font-size: 1.1rem; color: var(--color-text-main);">Portal de Trabajo</strong>
+          </div>
+          <p style="font-size: 0.88rem; line-height: 1.5; color: var(--color-text-muted); margin-bottom: 1rem;">
+            Plataforma web integral para la conexión efectiva entre candidatos profesionales y empresas contratantes.
+          </p>
+          <div style="font-size: 0.8rem; color: var(--color-text-subtle);">
+            Arquitectura: HTML5 Semántico • CSS3 Puro • JavaScript Vanilla • Node.js Native HTTP • MongoDB Driver Oficial
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navegación</h4>
+          <ul>
+            <li><a href="#P-01" onclick="window.navigateTo('P-01')">Inicio</a></li>
+            <li><a href="#P-02" onclick="window.navigateTo('P-02')">Búsqueda de Empleos</a></li>
+            <li><a href="#U-04" onclick="window.navigateTo('U-04')">Empresas y Valoraciones</a></li>
+            <li><a href="#R-01" onclick="window.navigateTo('R-01')">Orientación Profesional</a></li>
+            <li><a href="#R-03" onclick="window.navigateTo('R-03')">Foros de Discusión</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Plataforma & Módulos</h4>
+          <ul>
+            <li><a href="#P-04" onclick="window.navigateTo('P-04')">Acceso y Registro</a></li>
+            <li><a href="#P-02" onclick="window.navigateTo('P-02')">Bolsa de Trabajo</a></li>
+            <li><a href="#P-01" onclick="window.navigateTo('P-01')">Términos y Privacidad</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          © 2026 Portal de Trabajo. Todos los derechos reservados.
+        </div>
+        <div style="font-size: 0.8rem;">
+          Versión Profesional 2.1.0 • Conectado a MongoDB (portal_trabajo)
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
