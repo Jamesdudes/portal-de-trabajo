@@ -100,7 +100,7 @@ El sistema inicializa automáticamente las cuentas y colecciones necesarias en M
 
 | Rol | Correo Electrónico | Contraseña | Pantallas Principales |
 | :--- | :--- | :--- | :--- |
-| **Candidato** | `samuel.villa@catolica.edu.sv` | `Password123` | Mi Perfil (U-01), Postulaciones (U-02), Alertas (U-03) |
+| **Candidato** | `samu` | `Password123` | Mi Perfil (U-01), Postulaciones (U-02), Alertas (U-03) |
 | **Empresa** | `reclutamiento@techcorp.sv` | `Password123` | Mi Empresa (E-01), Ofertas (E-02), Candidatos (E-03) |
 | **Administrador** | `admin.portal@catolica.edu.sv` | `Password123` | Panel Admin (A-01), Auditoría y Diagnóstico |
 
