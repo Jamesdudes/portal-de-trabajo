@@ -1,241 +1,254 @@
-
+import { ObjectId } from 'mongodb';
 import { getCollection } from '../config/db.js';
 
-const APPLICATION_STATUSES = [
-  'Enviada',
-  'En proceso',
-  'Finalista',
-  'Contratado',
-  'Descartado'
-];
+async function applyPrivacyToApplications(apps) {
+  if (!Array.isArray(apps) || apps.length === 0) return apps;
 
-function sendError(res, status, error) {
-  return res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8'
-  }).end(JSON.stringify({ error }));
-}
+  const usersCol = getCollection('users');
+  const candidateIds = [...new Set(apps.map(a => a.candidateId).filter(Boolean))];
+  const candidates = candidateIds.length > 0
+    ? await usersCol
+      .find({ _id: { $in: candidateIds } }, { projection: { _id: 1, privacy: 1 } })
+      .toArray()
+    : [];
 
-function sendSuccess(res, status, data) {
-  return res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8'
-  }).end(JSON.stringify(data));
-}
+  const privacyByCandidate = new Map(
+    candidates.map(c => [
+      c._id,
+      c.privacy || { showPhoneToCompanies: true, showEmailToCompanies: true, isProfilePublic: true }
+    ])
+  );
 
-function getCandidateName(user) {
-  return `${user.firstName || ''} ${user.lastName || ''}`.trim();
-}
-
-function getCurrentDate() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function getCurrentDateTime() {
-  return new Date().toISOString().replace('T', ' ').slice(0, 16);
-}
-
-export async function listApplications(req, res, user, query = {}) {
-  try {
-    if (!user) {
-      return sendError(res, 401, 'Debes iniciar sesión para consultar las postulaciones.');
-    }
-
-    const filter = {};
-
-    if (user.role === 'candidato') {
-      filter.candidateId = String(user._id);
-    } else if (user.role === 'empleador') {
-      if (!user.companyId) {
-        return sendError(res, 403, 'Tu cuenta no tiene una empresa asociada.');
-      }
-      filter.companyId = String(user.companyId);
-    } else if (user.role !== 'admin') {
-      return sendError(res, 403, 'No tienes permiso para consultar postulaciones.');
-    }
-
-    if (query.jobId) filter.jobId = String(query.jobId);
-    if (query.status) {
-      if (!APPLICATION_STATUSES.includes(query.status)) {
-        return sendError(res, 400, 'El estado indicado no es válido.');
-      }
-      filter.status = query.status;
-    }
-
-    const applications = await getCollection('applications')
-      .find(filter)
-      .sort({ appliedAt: -1 })
-      .toArray();
-
-    return sendSuccess(res, 200, {
-      applications,
-      total: applications.length
-    });
-  } catch (error) {
-    console.error('Error al listar postulaciones:', error);
-    return sendError(res, 500, 'No se pudieron obtener las postulaciones.');
-  }
-}
-
-export async function applyToJob(req, res, user, body = {}) {
-  try {
-    if (!user) {
-      return sendError(res, 401, 'Debes iniciar sesión para postularte.');
-    }
-
-    if (user.role !== 'candidato') {
-      return sendError(res, 403, 'Solo los candidatos pueden postularse a ofertas laborales.');
-    }
-
-    const jobId = String(body.jobId || '').trim();
-    const cvFileId = String(body.cvFileId || '').trim();
-    const coverNote = typeof body.coverNote === 'string'
-      ? body.coverNote.trim()
-      : '';
-
-    if (!jobId) {
-      return sendError(res, 400, 'Debes seleccionar una oferta laboral.');
-    }
-
-    if (!cvFileId) {
-      return sendError(res, 400, 'Debes tener un currículum registrado para postularte.');
-    }
-
-    if (coverNote.length > 2000) {
-      return sendError(res, 400, 'La carta de presentación no debe superar los 2000 caracteres.');
-    }
-
-    const job = await getCollection('jobs').findOne({ _id: jobId });
-
-    if (!job) {
-      return sendError(res, 404, 'La oferta laboral no existe.');
-    }
-
-    if (job.status !== 'Activa') {
-      return sendError(res, 400, 'Esta oferta laboral ya no está disponible.');
-    }
-
-    if (job.expiresAt && job.expiresAt < getCurrentDate()) {
-      return sendError(res, 400, 'El plazo para postularse a esta oferta ha finalizado.');
-    }
-
-    const existingApplication = await getCollection('applications').findOne({
-      jobId,
-      candidateId: String(user._id)
-    });
-
-    if (existingApplication) {
-      return sendError(res, 409, 'Ya te has postulado a esta oferta laboral.');
-    }
-
-    const candidate = await getCollection('users').findOne({
-      _id: String(user._id)
-    });
-
-    if (!candidate) {
-      return sendError(res, 404, 'No se encontró tu perfil de candidato.');
-    }
-
-    if (!candidate.cv || String(candidate.cv.fileId) !== cvFileId) {
-      return sendError(res, 400, 'El currículum seleccionado no coincide con tu perfil.');
-    }
-
-    const application = {
-      _id: `app-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      jobId,
-      jobTitle: job.title,
-      companyId: String(job.companyId),
-      companyName: job.companyName || '',
-      companyLogo: job.companyLogo || '',
-      candidateId: String(candidate._id),
-      candidateName: getCandidateName(candidate),
-      candidateEmail: candidate.email,
-      candidatePhone: candidate.privacy?.showPhoneToCompanies === false ? '' : candidate.phone || '',
-      candidateTitle: candidate.title || '',
-      appliedAt: getCurrentDate(),
-      status: 'Enviada',
-      cvFileName: candidate.cv.fileName || '',
-      cvFileId,
-      coverNote,
-      history: [
-        {
-          date: getCurrentDateTime(),
-          status: 'Enviada',
-          note: 'Postulación recibida.'
-        }
-      ]
+  return apps.map(app => {
+    const privacy = privacyByCandidate.get(app.candidateId) || {
+      showPhoneToCompanies: true,
+      showEmailToCompanies: true,
+      isProfilePublic: true
     };
+    const showEmail = privacy.showEmailToCompanies !== false;
+    const showPhone = privacy.showPhoneToCompanies !== false;
+    const isProfilePublic = privacy.isProfilePublic !== false;
 
-    await getCollection('applications').insertOne(application);
-
-    return sendSuccess(res, 201, {
-      message: 'Postulación registrada exitosamente.',
-      application
-    });
-  } catch (error) {
-    console.error('Error al registrar postulación:', error);
-    return sendError(res, 500, 'No se pudo registrar la postulación.');
-  }
+    return {
+      ...app,
+      candidateEmail: showEmail ? app.candidateEmail : null,
+      candidatePhone: showPhone ? app.candidatePhone : null,
+      candidateTitle: isProfilePublic ? app.candidateTitle : 'Perfil privado',
+      emailHidden: !showEmail,
+      phoneHidden: !showPhone,
+      isProfilePublic
+    };
+  });
 }
 
-export async function updateApplicationStatus(req, res, user, applicationId, body = {}) {
-  try {
-    if (!user) {
-      return sendError(res, 401, 'Debes iniciar sesión para actualizar una postulación.');
+export async function listApplications(req, res, user, queryParams) {
+  if (!user) {
+    res.writeHead(401, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'No autorizado.' }));
+  }
+
+  let filter = {};
+
+  if (user.role === 'candidato') {
+    filter = { candidateId: user._id };
+  } else if (user.role === 'empleador') {
+    if (!user.companyId) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: 'Su cuenta de empleador no tiene una empresa asociada.' }));
     }
+    filter = { companyId: user.companyId };
+  }
 
-    if (!['empleador', 'admin'].includes(user.role)) {
-      return sendError(res, 403, 'No tienes permiso para actualizar postulaciones.');
-    }
+  if (queryParams?.jobId && String(queryParams.jobId).trim()) {
+    filter.jobId = String(queryParams.jobId).trim();
+  }
+  if (queryParams?.status && String(queryParams.status).trim()) {
+    filter.status = String(queryParams.status).trim();
+  }
 
-    const application = await getCollection('applications').findOne({
-      _id: String(applicationId)
-    });
+  const appsCol = getCollection('applications');
+  const apps = await appsCol.find(filter).sort({ appliedAt: -1 }).toArray();
 
-    if (!application) {
-      return sendError(res, 404, 'La postulación no existe.');
-    }
+  const responseApps = ['empleador', 'admin'].includes(user.role)
+    ? await applyPrivacyToApplications(apps)
+    : apps;
 
-    if (
-      user.role === 'empleador' &&
-      String(user.companyId) !== String(application.companyId)
-    ) {
-      return sendError(res, 403, 'No tienes permiso para modificar esta postulación.');
-    }
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  return res.end(JSON.stringify({ applications: responseApps }));
+}
 
-    const status = String(body.status || '').trim();
-    const note = typeof body.note === 'string' ? body.note.trim() : '';
+export async function applyToJob(req, res, user, body) {
+  if (!user || user.role !== 'candidato') {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Solo los candidatos registrados pueden postularse a ofertas.' }));
+  }
 
-    if (!APPLICATION_STATUSES.includes(status)) {
-      return sendError(res, 400, 'El estado seleccionado no es válido.');
-    }
+  const { jobId, coverNote, cvFileId: requestedCvFileId } = body || {};
 
-    if (note.length > 500) {
-      return sendError(res, 400, 'La nota no debe superar los 500 caracteres.');
-    }
+  if (!jobId) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'El identificador de la oferta es requerido.' }));
+  }
 
-    const historyEntry = {
-      date: getCurrentDateTime(),
-      status,
-      note: note || `Fase actualizada a ${status}.`
-    };
+  const hasRequestedCvFileId =
+    requestedCvFileId !== undefined &&
+    requestedCvFileId !== null &&
+    String(requestedCvFileId).trim() !== '';
 
-    await getCollection('applications').updateOne(
-      { _id: String(applicationId) },
+  if (hasRequestedCvFileId && (typeof requestedCvFileId !== 'string' || !ObjectId.isValid(requestedCvFileId.trim()))) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'El identificador del currículum proporcionado no es válido.' }));
+  }
+
+  const usersCol = getCollection('users');
+  const freshUser = await usersCol.findOne({ _id: user._id });
+  if (!freshUser || ['Bloqueada', 'Suspendida', 'Inactiva'].includes(freshUser.status)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Su cuenta no se encuentra activa para enviar postulaciones.' }));
+  }
+
+  const targetCvFileId = hasRequestedCvFileId
+    ? requestedCvFileId.trim()
+    : (freshUser.cv && freshUser.cv.fileId ? String(freshUser.cv.fileId).trim() : '');
+
+  if (!targetCvFileId || !ObjectId.isValid(targetCvFileId)) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({
+      error: 'Debes subir un Currículum Vitae real (PDF o DOCX) en tu perfil antes de postularte a una oferta.'
+    }));
+  }
+
+  const filesCol = getCollection('uploads.files');
+  const fileDoc = await filesCol.findOne({ _id: new ObjectId(targetCvFileId) });
+
+  if (!fileDoc) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'El archivo de currículum especificado no existe en MongoDB GridFS.' }));
+  }
+
+  if (fileDoc.metadata?.ownerId !== user._id || fileDoc.metadata?.fileType !== 'cv') {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'No tienes permiso para asociar un currículum que no te pertenece.' }));
+  }
+
+  const verifiedCvFileId = targetCvFileId;
+  const verifiedCvFileName = fileDoc.metadata?.originalName || fileDoc.filename;
+
+  const jobsCol = getCollection('jobs');
+  const job = await jobsCol.findOne({ _id: jobId });
+
+  if (!job) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'La oferta de empleo no existe.' }));
+  }
+
+  if (job.status !== 'Activa') {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Esta oferta ya no se encuentra activa para postulaciones.' }));
+  }
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (job.expiresAt && job.expiresAt < todayStr) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Esta oferta laboral ha vencido y ya no acepta postulaciones.' }));
+  }
+
+  const appsCol = getCollection('applications');
+  // Anti-duplicate check
+  const existing = await appsCol.findOne({ jobId: job._id, candidateId: user._id });
+  if (existing) {
+    res.writeHead(409, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Ya has enviado una postulación a esta vacante.' }));
+  }
+
+  const cleanCoverNote = typeof coverNote === 'string' ? coverNote.trim().slice(0, 500) : '';
+
+  const newApp = {
+    _id: `app-${Date.now()}`,
+    jobId: job._id,
+    jobTitle: job.title,
+    companyId: job.companyId,
+    companyName: job.companyName,
+    companyLogo: job.companyLogo || '',
+    candidateId: freshUser._id,
+    candidateName: `${freshUser.firstName} ${freshUser.lastName}`,
+    candidateEmail: freshUser.email,
+    candidatePhone: freshUser.phone || '',
+    candidateTitle: freshUser.title || 'Candidato Profesional',
+    appliedAt: todayStr,
+    status: 'Enviada',
+    cvFileName: verifiedCvFileName,
+    cvFileId: verifiedCvFileId,
+    coverNote: cleanCoverNote,
+    history: [
       {
-        $set: { status },
-        $push: { history: historyEntry }
+        date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        status: 'Enviada',
+        note: 'Postulación enviada a través de la plataforma Portal de Trabajo.'
       }
-    );
+    ]
+  };
 
-    const updatedApplication = await getCollection('applications').findOne({
-      _id: String(applicationId)
-    });
+  await appsCol.insertOne(newApp);
 
-    return sendSuccess(res, 200, {
-      message: 'Estado de postulación actualizado correctamente.',
-      application: updatedApplication
-    });
-  } catch (error) {
-    console.error('Error al actualizar postulación:', error);
-    return sendError(res, 500, 'No se pudo actualizar el estado de la postulación.');
+  res.writeHead(201, { 'Content-Type': 'application/json' });
+  return res.end(JSON.stringify({
+    message: 'Postulación enviada con éxito.',
+    application: newApp
+  }));
+}
+
+export async function updateApplicationStatus(req, res, user, appId, body) {
+  if (!user || !['empleador', 'admin'].includes(user.role)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Solo empleadores o administradores pueden actualizar el estado de una postulación.' }));
   }
+
+  const { status, note } = body || {};
+  const validStatuses = ['Enviada', 'En proceso', 'Finalista', 'Contratado', 'Descartado'];
+
+  if (!status || !validStatuses.includes(status)) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: `Estado inválido. Opciones válidas: ${validStatuses.join(', ')}` }));
+  }
+
+  const appsCol = getCollection('applications');
+  const app = await appsCol.findOne({ _id: appId });
+
+  if (!app) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Postulación no encontrada.' }));
+  }
+
+  if (user.role === 'empleador' && (!user.companyId || app.companyId !== user.companyId)) {
+    res.writeHead(403, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ error: 'Solo puede gestionar postulaciones pertenecientes a su empresa.' }));
+  }
+
+  const cleanNote = typeof note === 'string' && note.trim()
+    ? note.trim().slice(0, 500)
+    : `Estado actualizado a "${status}" por ${user.firstName} ${user.lastName}.`;
+
+  const newHistoryEntry = {
+    date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+    status,
+    note: cleanNote
+  };
+
+  await appsCol.updateOne(
+    { _id: appId },
+    {
+      $set: { status, updatedAt: new Date() },
+      $push: { history: newHistoryEntry }
+    }
+  );
+
+  const updated = await appsCol.findOne({ _id: appId });
+  const [sanitizedApplication] = await applyPrivacyToApplications([updated]);
+
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  return res.end(JSON.stringify({
+    message: 'Estado de postulación actualizado.',
+    application: sanitizedApplication
+  }));
 }
