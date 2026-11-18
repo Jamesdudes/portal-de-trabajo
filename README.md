@@ -100,14 +100,10 @@ http://localhost:3000
 El sistema inicializa automáticamente las cuentas y colecciones necesarias en MongoDB:
 
 | Rol | Correo Electrónico | Contraseña | Pantallas Principales |
-| :--- | :--- | :--- | :--- |
-
+|---|---|---|---|
 | **Candidato** | `candidato.villa@catolica.edu.sv` | `Password123` | Mi Perfil (U-01), Postulaciones (U-02), Alertas (U-03) |
 | **Empresa** | `reclutamiento@techcorp.sv` | `Password123` | Mi Empresa (E-01), Ofertas (E-02), Candidatos (E-03) |
 | **Administrador** | `admin.portal@catolica.edu.sv` | `Password123` | Panel Admin (A-01), Auditoría y Diagnóstico |
-
----
-
 ## 4. Funcionalidades Destacadas
 
 1. **Formato Automático de Teléfonos:**
