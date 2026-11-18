@@ -5,7 +5,6 @@
 
 
 ## 1. Arquitectura Tecnológica 
->>>>>>> d3ec224 (Actualización de versión corregida y pruebas integrales)
 
 El sistema ha sido desarrollado exclusivamente bajo las tecnologías solicitadas:
 
@@ -104,7 +103,6 @@ El sistema inicializa automáticamente las cuentas y colecciones necesarias en M
 | :--- | :--- | :--- | :--- |
 
 | **Candidato** | `candidato.villa@catolica.edu.sv` | `Password123` | Mi Perfil (U-01), Postulaciones (U-02), Alertas (U-03) |
->>>>>>> d3ec224 (Actualización de versión corregida y pruebas integrales)
 | **Empresa** | `reclutamiento@techcorp.sv` | `Password123` | Mi Empresa (E-01), Ofertas (E-02), Candidatos (E-03) |
 | **Administrador** | `admin.portal@catolica.edu.sv` | `Password123` | Panel Admin (A-01), Auditoría y Diagnóstico |
 
