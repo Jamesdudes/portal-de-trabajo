@@ -3,7 +3,7 @@
 
 ---
 
-## 1. Arquitectura Tecnológica Estricta (Requisitos Académicos)
+## 1. Arquitectura Tecnológica Estricta 
 
 El sistema ha sido desarrollado exclusivamente bajo las tecnologías solicitadas:
 
